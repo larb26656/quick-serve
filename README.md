@@ -11,7 +11,7 @@ CLI tool for serving static files temporarily with auto-expiration and deletion.
 - Interactive CLI prompts
 - Configuration via file, environment variables, or CLI flags
 
-## Installation
+### Development
 
 ```bash
 bun install
@@ -19,10 +19,24 @@ bun install
 
 ## Quick Start
 
+## Installation
+
+### Global (recommended)
+
+```bash
+# From local directory
+bun install -g .
+
+# Or from GitHub
+bun install -g https://github.com/larb26656/quick-serve
+```
+
+Then use `q-serve` from anywhere:
+
 ### Start the Server
 
 ```bash
-bun run src/index.ts server
+q-serve server
 ```
 
 Or use npm scripts:
@@ -34,13 +48,18 @@ bun run serve
 ### Serve a File
 
 ```bash
-bun run src/index.ts ./myfile.png
+q-serve ./myfile.png
 ```
 
 ### With Options
 
 ```bash
-bun run src/index.ts ./myfile.png --timeout 60 --open
+q-serve ./myfile.png --timeout 60 --open
+```
+
+```bash
+q-serve ./myfile.png
+q-serve server
 ```
 
 ## Usage
@@ -147,7 +166,7 @@ bun run serve
 2. In another terminal, serve a file:
 
 ```bash
-bun run src/index.ts ./image.png
+q-serve ./image.png
 ```
 
 You'll see output like:
@@ -164,7 +183,7 @@ You'll see output like:
 Automatically start the server if not running:
 
 ```bash
-bun run src/index.ts ./document.pdf --server --timeout 120
+q-serve ./document.pdf --server --timeout 120
 ```
 
 ### Using --open Flag
@@ -172,7 +191,7 @@ bun run src/index.ts ./document.pdf --server --timeout 120
 Automatically open browser after serving:
 
 ```bash
-bun run src/index.ts ./screenshot.png --open
+q-serve ./screenshot.png --open
 ```
 
 ### Interactive Mode
@@ -180,7 +199,7 @@ bun run src/index.ts ./screenshot.png --open
 Run without flags to be prompted for options:
 
 ```bash
-bun run src/index.ts ./file.txt
+q-serve ./file.txt
 ```
 
 You'll be asked for:
