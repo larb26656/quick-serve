@@ -64,18 +64,12 @@ Arguments:
   <path>            File or directory to serve
 
 Options:
-  --timeout <sec>  Session timeout in seconds (default: 30)
-  --open           Open browser after serving
-  --server         Start server if not running
-  --port <number>  Server port (default: 3000)
-  --config <path>  Config file path
+  -t, --timeout <sec>  Session timeout in seconds (default: 30)
+  -o, --open           Open browser after serving
+  -s, --server         Start server if not running
+  -p, --port <number>  Server port (default: 3000)
+  -c, --config <path>  Config file path
 ```
-
-### Interactive Mode (inquirer)
-When running without flags, prompts for:
-- Session timeout
-- Server port (if --server flag used)
-- Storage path (if --server flag used)
 
 ## 5. Session
 
@@ -273,7 +267,7 @@ Storage: ./q-storage
 {
   "dependencies": {
     "bun": ">=1.0",
-    "inquirer": "^9.0"
+    "commander": "^12.0"
   }
 }
 ```

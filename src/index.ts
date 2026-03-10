@@ -1,48 +1,18 @@
 #!/usr/bin/env bun
-import { readFile } from 'fs/promises';
-import { existsSync } from 'fs';
-import { resolve, basename } from 'path';
-import { spawn } from 'child_process';
-import inquirer from 'inquirer';
-import { loadConfig, mergeCliFlags, type Config } from './config.js';
-import { createServer } from './server.js';
+import { readFile } from "fs/promises";
+import { existsSync } from "fs";
+import { resolve, basename } from "path";
+import { spawn } from "child_process";
+import { Command } from "commander";
+import { loadConfig, mergeCliFlags, type Config } from "./config.js";
+import { createServer } from "./server.js";
 
-interface CliFlags {
+interface CliOptions {
   port?: number;
   config?: string;
   timeout?: number;
   open?: boolean;
   server?: boolean;
-  help?: boolean;
-}
-
-function parseArgs(args: string[]): { command: string; path?: string; flags: CliFlags } {
-  const flags: CliFlags = {};
-  const remaining: string[] = [];
-
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-    if (arg === '--port' && i + 1 < args.length) {
-      flags.port = parseInt(args[++i], 10);
-    } else if (arg === '--config' && i + 1 < args.length) {
-      flags.config = args[++i];
-    } else if (arg === '--timeout' && i + 1 < args.length) {
-      flags.timeout = parseInt(args[++i], 10);
-    } else if (arg === '--open') {
-      flags.open = true;
-    } else if (arg === '--server') {
-      flags.server = true;
-    } else if (arg === '--help' || arg === '-h') {
-      flags.help = true;
-    } else if (!arg.startsWith('-')) {
-      remaining.push(arg);
-    }
-  }
-
-  const command = remaining[0] || 'help';
-  const path = remaining[1];
-
-  return { command, path, flags };
 }
 
 async function checkServerRunning(port: number): Promise<boolean> {
@@ -57,23 +27,31 @@ async function checkServerRunning(port: number): Promise<boolean> {
 async function uploadFile(
   filePath: string,
   timeout: number,
-  port: number
+  port: number,
+  open: boolean,
 ): Promise<void> {
   const fileContent = await readFile(filePath);
   const filename = basename(filePath);
 
   const formData = new FormData();
-  formData.append('file', new Blob([fileContent]), filename);
-  formData.append('timeout', timeout.toString());
+  formData.append("file", new Blob([fileContent]), filename);
+  formData.append("timeout", timeout.toString());
 
   const response = await fetch(`http://localhost:${port}/api/sessions`, {
-    method: 'POST',
+    method: "POST",
     body: formData,
   });
 
-  if (!response.ok) {
+  let errorMessage: string;
+  try {
     const error = await response.json();
-    throw new Error(error.error || 'Failed to upload file');
+    errorMessage = error.error || "Failed to upload file";
+  } catch {
+    errorMessage = `Server error: ${response.status} ${response.statusText}`;
+  }
+
+  if (!response.ok) {
+    throw new Error(errorMessage);
   }
 
   const data = await response.json();
@@ -82,153 +60,108 @@ async function uploadFile(
   console.log(`\n🔗 ${session.url}`);
   console.log(`⏰ Expires in ${timeout}s`);
 
-  if (flags.open) {
+  if (open) {
     console.log(`🌐 Opening browser...`);
-    spawn('xdg-open', [session.url], { detached: true, stdio: 'ignore' }).unref();
+    spawn("xdg-open", [session.url], {
+      detached: true,
+      stdio: "ignore",
+    }).unref();
   }
-}
-
-async function promptForOptions(
-  useServer: boolean,
-  config: Config
-): Promise<{ timeout: number; port: number }> {
-  const questions = [];
-
-  questions.push({
-    type: 'input',
-    name: 'timeout',
-    message: 'Session timeout (seconds):',
-    default: config.defaultTimeout.toString(),
-    validate: (input: string) => {
-      const num = parseInt(input, 10);
-      return !isNaN(num) && num > 0;
-    },
-  });
-
-  if (useServer) {
-    questions.push({
-      type: 'input',
-      name: 'port',
-      message: 'Server port:',
-      default: config.port.toString(),
-      validate: (input: string) => {
-        const num = parseInt(input, 10);
-        return !isNaN(num) && num > 0 && num < 65536;
-      },
-    });
-  }
-
-  const answers = await inquirer.prompt(questions);
-  return {
-    timeout: parseInt(answers.timeout, 10),
-    port: useServer ? parseInt(answers.port, 10) : config.port,
-  };
 }
 
 async function startServer(config: Config): Promise<void> {
   const server = await createServer(config);
-  console.log(`Server running on http://0.0.0.0:${server.port}`);
-  console.log(`Storage: ${config.storage}`);
   console.log(`Press Ctrl+C to stop`);
 
   process.stdin.resume();
 }
 
-let flags: CliFlags = {};
-
-async function main() {
-  const args = process.argv.slice(2);
-  const { command, path, flags: parsedFlags } = parseArgs(args);
-  flags = parsedFlags;
-
-  if (flags.help) {
-    printHelp();
-    return;
-  }
-
-  let config = await loadConfig(flags.config);
-  config = mergeCliFlags(config, {
-    port: flags.port,
-    defaultTimeout: flags.timeout,
-  });
-
-  if (command === 'server') {
-    await startServer(config);
-    return;
-  }
-
-  if (!path) {
-    printHelp();
-    return;
-  }
-
-  const filePath = resolve(path);
+async function serveFile(
+  filePath: string,
+  config: Config,
+  options: CliOptions,
+): Promise<void> {
   if (!existsSync(filePath)) {
     console.error(`Error: File not found: ${filePath}`);
     process.exit(1);
   }
 
-  const isRunning = await checkServerRunning(config.port);
+  const port = options.port ?? config.port;
+  const isRunning = await checkServerRunning(port);
 
   if (!isRunning) {
-    if (flags.server) {
-      console.log(`Starting server on port ${config.port}...`);
-      await startServer(config);
+    if (options.server) {
+      console.log(`Starting server on port ${port}...`);
+      const serverConfig = { ...config, port };
+      await startServer(serverConfig);
+      return;
     } else {
+      console.error(`Error: Server not running on port ${port}`);
       console.error(
-        `Error: Server not running on port ${config.port}`
-      );
-      console.error(
-        `Use --server to start server or --port to specify different port`
+        `Use --server to start server or --port to specify different port`,
       );
       process.exit(1);
     }
   }
 
-  let timeout = flags.timeout ?? config.defaultTimeout;
-
-  if (!flags.timeout) {
-    const answers = await inquirer.prompt([
-      {
-        type: 'input',
-        name: 'timeout',
-        message: 'Session timeout (seconds):',
-        default: timeout.toString(),
-        validate: (input: string) => {
-          const num = parseInt(input, 10);
-          return !isNaN(num) && num > 0;
-        },
-      },
-    ]);
-    timeout = parseInt(answers.timeout, 10);
-  }
-
-  await uploadFile(filePath, timeout, config.port);
+  const timeout = options.timeout ?? config.defaultTimeout;
+  await uploadFile(filePath, timeout, port, options.open ?? false);
 }
 
-function printHelp() {
-  console.log(`
-q-serve - CLI tool for serving static files temporarily
+async function main() {
+  const program = new Command();
 
-Usage:
-  q-serve server [options]     Start the server
-  q-serve <path> [options]     Serve a file or directory
+  program
+    .name("q-serve")
+    .description("CLI tool for serving static files temporarily")
+    .version("1.0.0");
 
-Options:
-  --port <number>    Port to listen (default: 3000)
-  --timeout <sec>   Session timeout in seconds (default: 30)
-  --open            Open browser after serving
-  --server          Start server if not running
-  --config <path>   Config file path
-  --help, -h        Show this help message
+  program
+    .command("server")
+    .description("Start the server")
+    .option("-p, --port <number>", "Port to listen", "3000")
+    .option("-c, --config <path>", "Config file path")
+    .action(async (options) => {
+      const configOptions = {
+        port: options.port ? parseInt(options.port, 10) : undefined,
+        config: options.config,
+      };
 
-Config file locations (in order of priority):
-  1. ./q-serve.json (project directory)
-  2. ~/.q-serve.json (home directory)
+      let config = await loadConfig(configOptions.config);
+      config = mergeCliFlags(config, { port: configOptions.port });
+      await startServer(config);
+    });
 
-Environment variables (override config):
-  Q_SERVE_PORT, Q_SERVE_STORAGE, Q_SERVE_DEFAULT_TIMEOUT
-`);
+  program
+    .argument("<path>", "File or directory to serve")
+    .option("-t, --timeout <seconds>", "Session timeout in seconds", "30")
+    .option("-o, --open", "Open browser after serving")
+    .option("-s, --server", "Start server if not running")
+    .option("-p, --port <number>", "Server port", "3000")
+    .option("-c, --config <path>", "Config file path")
+    .action(async (path: string, options) => {
+      const configOptions = {
+        port: options.port ? parseInt(options.port, 10) : undefined,
+        timeout: options.timeout ? parseInt(options.timeout, 10) : undefined,
+        config: options.config,
+      };
+
+      let config = await loadConfig(configOptions.config);
+      config = mergeCliFlags(config, {
+        port: configOptions.port,
+        defaultTimeout: configOptions.timeout,
+      });
+
+      const filePath = resolve(path);
+      await serveFile(filePath, config, {
+        port: configOptions.port,
+        timeout: configOptions.timeout,
+        open: options.open,
+        server: options.server,
+      });
+    });
+
+  program.parse();
 }
 
 main().catch(console.error);

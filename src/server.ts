@@ -1,36 +1,16 @@
-import { mkdir, stat } from 'fs/promises';
-import { existsSync } from 'fs';
+import { mkdir } from "fs/promises";
+import { existsSync } from "fs";
+import { Elysia, t, file } from "elysia";
 import {
   createSession,
   deleteSession,
   getSessionByKey,
-  getSessionById,
   getAllSessions,
   getActiveSessionCount,
   setStoragePath,
-} from './session.js';
-import type { Config } from './config.js';
-
-const MIME_TYPES: Record<string, string> = {
-  '.html': 'text/html',
-  '.htm': 'text/html',
-  '.css': 'text/css',
-  '.js': 'application/javascript',
-  '.json': 'application/json',
-  '.txt': 'text/plain',
-  '.md': 'text/markdown',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.gif': 'image/gif',
-  '.svg': 'image/svg+xml',
-  '.webp': 'image/webp',
-};
-
-function getMimeType(filename: string): string {
-  const ext = filename.slice(filename.lastIndexOf('.')).toLowerCase();
-  return MIME_TYPES[ext] || 'application/octet-stream';
-}
+} from "./session.js";
+import type { Config } from "./config.js";
+import { resolve } from "path";
 
 export async function createServer(config: Config) {
   setStoragePath(config.storage);
@@ -41,107 +21,86 @@ export async function createServer(config: Config) {
 
   const baseUrl = `http://0.0.0.0:${config.port}`;
 
-  const server = Bun.serve({
-    port: config.port,
-    hostname: '0.0.0.0',
-    async fetch(req) {
-      const url = new URL(req.url);
-      const pathname = url.pathname;
+  const app = new Elysia()
+    .get("/api/health", () => ({
+      status: "ok",
+      uptime: process.uptime(),
+      activeSessions: getActiveSessionCount(),
+      storage: config.storage,
+    }))
+    .get("/api/sessions", () => ({
+      sessions: getAllSessions(baseUrl),
+      storage: config.storage,
+    }))
+    .post(
+      "/api/sessions",
+      async ({ body: { file }, status }) => {
+        // const timeoutStr =
+        const timeout = config.defaultTimeout;
 
-      if (pathname === '/api/health') {
-        return Response.json({
-          status: 'ok',
-          uptime: process.uptime(),
-          activeSessions: getActiveSessionCount(),
-          storage: config.storage,
-        });
-      }
-
-      if (pathname === '/api/sessions') {
-        if (req.method === 'GET') {
-          return Response.json({
-            sessions: getAllSessions(baseUrl),
-            storage: config.storage,
+        if (!file) {
+          return new Response(JSON.stringify({ error: "No file provided" }), {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
           });
         }
 
-        if (req.method === 'POST') {
-          const formData = await req.formData();
-          const file = formData.get('file') as File | null;
-          const timeoutStr = formData.get('timeout') as string | null;
-          const timeout = timeoutStr ? parseInt(timeoutStr, 10) : config.defaultTimeout;
+        const tempPath = `/tmp/${Date.now()}-${file.name}`;
+        const buffer = await file.arrayBuffer();
+        await Bun.write(tempPath, buffer);
 
-          if (!file) {
-            return Response.json({ error: 'No file provided' }, { status: 400 });
-          }
-
-          const tempPath = `/tmp/${Date.now()}-${file.name}`;
-          const buffer = await file.arrayBuffer();
-          await Bun.write(tempPath, buffer);
-
-          const session = await createSession(
-            tempPath,
-            timeout,
-            config.storage,
-            baseUrl,
-            file.name
-          );
-
-          return Response.json(
-            {
-              session,
-              storage: config.storage,
-            },
-            { status: 201 }
-          );
-        }
-      }
-
-      const sessionDeleteMatch = pathname.match(/^\/api\/sessions\/([^\/]+)$/);
-      if (sessionDeleteMatch && req.method === 'DELETE') {
-        const id = sessionDeleteMatch[1];
-        await deleteSession(id);
-        return Response.json({ success: true });
-      }
-
-      const staticMatch = pathname.match(/^\/s\/([^\/]+)$/);
-      if (staticMatch) {
-        const key = staticMatch[1];
-        const session = getSessionByKey(key);
-
-        if (!session) {
-          return Response.json(
-            { error: 'Session not found or expired' },
-            { status: 404 }
-          );
-        }
-
-        const fileExists = existsSync(session.path);
-        if (!fileExists) {
-          return Response.json(
-            { error: 'Session not found or expired' },
-            { status: 404 }
-          );
-        }
-
-        const fileStats = await stat(session.path);
-        const expiresIn = Math.floor(
-          (new Date(session.expiresAt).getTime() - Date.now()) / 1000
+        const session = await createSession(
+          tempPath,
+          timeout,
+          config.storage,
+          baseUrl,
+          file.name,
         );
 
-        const file = await Bun.file(session.path).arrayBuffer();
+        return status(201, { session, storage: config.storage });
+      },
+      {
+        body: t.Object({
+          file: t.File(),
+        }),
+      },
+    )
+    .delete("/api/sessions/:id", async ({ params: { id } }) => {
+      await deleteSession(id);
+      return { success: true };
+    })
+    .get("/s/:key", async ({ params: { key }, status, set }) => {
+      const session = getSessionByKey(key);
 
-        return new Response(file, {
-          headers: {
-            'Content-Type': getMimeType(session.filename),
-            'Content-Length': fileStats.size.toString(),
-            'X-Expires-In': expiresIn.toString(),
-          },
-        });
+      if (!session) {
+        return status(404, { message: "Session not found or expired" });
       }
 
-      return Response.json({ error: 'Not found' }, { status: 404 });
-    },
+      const fileExists = existsSync(session.path);
+      if (!fileExists) {
+        return status(404, { message: "Session not found or expired" });
+      }
+
+      const expiresIn = Math.floor(
+        (new Date(session.expiresAt).getTime() - Date.now()) / 1000,
+      );
+
+      set.headers["x-expires-in"] = expiresIn.toString();
+
+      const path = resolve(session.path);
+      return file(path);
+    })
+    .onError(({ error, code }) => {
+      if (code === "NOT_FOUND")
+        return {
+          message: "Not found",
+          error,
+        };
+    });
+
+  const server = app.listen(config.port, () => {
+    console.log(`Server running on http://0.0.0.0:${config.port}`);
+    console.log(`Storage: ${config.storage}`);
   });
 
   return server;
