@@ -88,7 +88,7 @@ q-serve <path> [options]
 
 ### Config File
 
-Create `q-serve.json` in your project directory or home directory:
+Create `q-serve.json` in your project directory, or use the global config:
 
 ```json
 {
@@ -100,8 +100,11 @@ Create `q-serve.json` in your project directory or home directory:
 
 Config file locations (in order of priority):
 
-1. `./q-serve.json` (project directory)
-2. `~/.q-serve.json` (home directory)
+1. `--config <path>` (custom path)
+2. `./q-serve.json` (project directory)
+3. `~/.q-serve/q-serve.json` (home directory)
+
+On first run, a global config is automatically created at `~/.q-serve/q-serve.json` with default values.
 
 ### Environment Variables
 

@@ -16,6 +16,7 @@ Use this skill when the user:
 - Wants a quick local file server
 - Needs to test file uploads or downloads
 - Wants to share files via URL with timeout
+- Requests to generate a shareable/temporary link for a file
 
 ## Key Features
 
@@ -66,8 +67,11 @@ q-serve ./document.pdf --server --timeout 120
 
 Config file locations (in order of priority):
 
-1. `./q-serve.json` (project directory)
-2. `~/.q-serve.json` (home directory)
+1. `--config <path>` (custom path)
+2. `./q-serve.json` (project directory)
+3. `~/.q-serve/q-serve.json` (home directory)
+
+On first run, a global config is automatically created at `~/.q-serve/q-serve.json` with default values.
 
 ### Environment Variables
 
@@ -80,6 +84,11 @@ export Q_SERVE_DEFAULT_TIMEOUT=30
 ### Priority
 
 CLI flags > Environment variables > Config file > Defaults
+
+## Usage Guidelines
+
+- **Do not use `--open` or `-o` option unless the user explicitly requests it**
+- Only use `--open` when the user specifically asks to open the browser automatically
 
 ## CLI Options
 
