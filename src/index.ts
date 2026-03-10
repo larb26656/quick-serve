@@ -115,7 +115,7 @@ async function main() {
   program
     .command("server")
     .description("Start the server")
-    .option("-p, --port <number>", "Port to listen", "3000")
+    .option("-p, --port <number>", "Port to listen", "3333")
     .option("-c, --config <path>", "Config file path")
     .action(async (options) => {
       const configOptions = {
@@ -133,7 +133,7 @@ async function main() {
     .option("-t, --timeout <seconds>", "Session timeout in seconds", "30")
     .option("-o, --open", "Open browser after serving")
     .option("-s, --server", "Start server if not running")
-    .option("-p, --port <number>", "Server port", "3000")
+    .option("-p, --port <number>", "Server port", "3333")
     .option("-c, --config <path>", "Config file path")
     .action(async (path: string, options) => {
       const configOptions = {

@@ -31,7 +31,7 @@ A CLI tool for serving static files temporarily with auto-expiration and deletio
 ### Config Schema
 ```json
 {
-  "port": 3000,
+  "port": 3333,
   "storage": "./q-storage",
   "defaultTimeout": 30
 }
@@ -52,7 +52,7 @@ CLI flags > Env variables > Config file > Defaults
 q-serve server [options]
 
 Options:
-  --port <number>    Port to listen (default: 3000)
+  --port <number>    Port to listen (default: 3333)
   --config <path>   Config file path
 ```
 
@@ -67,7 +67,7 @@ Options:
   -t, --timeout <sec>  Session timeout in seconds (default: 30)
   -o, --open           Open browser after serving
   -s, --server         Start server if not running
-  -p, --port <number>  Server port (default: 3000)
+  -p, --port <number>  Server port (default: 3333)
   -c, --config <path>  Config file path
 ```
 
@@ -130,7 +130,7 @@ timeout: <number> (optional, seconds)
     "type": "image",
     "filename": "image.png",
     "expiresAt": "2026-03-10T12:00:30.000Z",
-    "url": "http://localhost:3000/s/abc123xy"
+    "url": "http://localhost:3333/s/abc123xy"
   },
   "storage": "./q-storage"
 }
@@ -149,7 +149,7 @@ List active sessions
       "type": "image",
       "filename": "image.png",
       "expiresAt": "2026-03-10T12:00:30.000Z",
-      "url": "http://localhost:3000/s/abc123xy"
+      "url": "http://localhost:3333/s/abc123xy"
     }
   ],
   "storage": "./q-storage"
@@ -201,8 +201,8 @@ http://<host>:<port>/s/<key>
 ```
 
 Examples:
-- `http://localhost:3000/s/abc123xy`
-- `http://192.168.1.100:3000/s/abc123xy`
+- `http://localhost:3333/s/abc123xy`
+- `http://192.168.1.100:3333/s/abc123xy`
 
 ## 8. CLI Output
 
@@ -210,7 +210,7 @@ Examples:
 ```
 $ q-serve ./image.png
 
-🔗 http://localhost:3000/s/abc123xy
+🔗 http://localhost:3333/s/abc123xy
 ⏰ Expires in 30s
 ```
 
@@ -218,7 +218,7 @@ $ q-serve ./image.png
 ```
 $ q-serve ./image.png --open
 
-🔗 http://localhost:3000/s/abc123xy
+🔗 http://localhost:3333/s/abc123xy
 ⏰ Expires in 30s
 🌐 Opening browser...
 ```
@@ -227,7 +227,7 @@ $ q-serve ./image.png --open
 ```
 $ q-serve ./image.png
 
-Error: Server not running on port 3000
+Error: Server not running on port 3333
 Use --server to start server or --port to specify different port
 ```
 
@@ -235,7 +235,7 @@ Use --server to start server or --port to specify different port
 ```
 $ q-serve server
 
-Server running on http://0.0.0.0:3000
+Server running on http://0.0.0.0:3333
 Storage: ./q-storage
 ```
 
@@ -276,7 +276,7 @@ Storage: ./q-storage
 
 | Option | Default |
 |--------|---------|
-| Port | 3000 |
+| Port | 3333 |
 | Timeout | 30 seconds |
 | Storage | `./q-storage` |
 | Key length | 8 characters |

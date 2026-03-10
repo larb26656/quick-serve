@@ -14,7 +14,7 @@ const GLOBAL_CONFIG_PATH = resolve(GLOBAL_CONFIG_DIR, "q-serve.json");
 const GLOBAL_STORAGE_PATH = resolve(GLOBAL_CONFIG_DIR, "storage");
 
 const DEFAULT_CONFIG: Config = {
-  port: 3000,
+  port: 3333,
   storage: GLOBAL_STORAGE_PATH,
   defaultTimeout: 30,
 };

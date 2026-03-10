@@ -59,7 +59,7 @@ q-serve ./document.pdf --server --timeout 120
 
 ```json
 {
-  "port": 3000,
+  "port": 3333,
   "storage": "./q-storage",
   "defaultTimeout": 30
 }
@@ -76,7 +76,7 @@ On first run, a global config is automatically created at `~/.q-serve/q-serve.js
 ### Environment Variables
 
 ```bash
-export Q_SERVE_PORT=3000
+export Q_SERVE_PORT=3333
 export Q_SERVE_STORAGE=./q-storage
 export Q_SERVE_DEFAULT_TIMEOUT=30
 ```
@@ -94,7 +94,7 @@ CLI flags > Environment variables > Config file > Defaults
 
 | Flag              | Description                 | Default |
 | ----------------- | --------------------------- | ------- |
-| `--port <number>` | Port to listen              | 3000    |
+| `--port <number>` | Port to listen              | 3333    |
 | `--timeout <sec>` | Session timeout in seconds  | 30      |
 | `--open`          | Open browser after serving  | false   |
 | `--server`        | Start server if not running | false   |

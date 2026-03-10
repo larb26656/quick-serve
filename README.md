@@ -78,7 +78,7 @@ q-serve <path> [options]
 
 | Flag              | Description                 | Default |
 | ----------------- | --------------------------- | ------- |
-| `--port <number>` | Port to listen              | 3000    |
+| `--port <number>` | Port to listen              | 3333    |
 | `--timeout <sec>` | Session timeout in seconds  | 30      |
 | `--open`          | Open browser after serving  | false   |
 | `--server`        | Start server if not running | false   |
@@ -92,7 +92,7 @@ Create `q-serve.json` in your project directory, or use the global config:
 
 ```json
 {
-  "port": 3000,
+  "port": 3333,
   "storage": "./q-storage",
   "defaultTimeout": 30
 }
@@ -111,7 +111,7 @@ On first run, a global config is automatically created at `~/.q-serve/q-serve.js
 Override config file settings:
 
 ```bash
-export Q_SERVE_PORT=3000
+export Q_SERVE_PORT=3333
 export Q_SERVE_STORAGE=./q-storage
 export Q_SERVE_DEFAULT_TIMEOUT=30
 ```
@@ -119,6 +119,70 @@ export Q_SERVE_DEFAULT_TIMEOUT=30
 ### Priority
 
 CLI flags > Environment variables > Config file > Defaults
+
+## Running as a Service (Linux/systemd)
+
+To run q-serve as a background service on Linux using systemd:
+
+### Create a Systemd Service File
+
+Create `/etc/systemd/system/q-serve.service`:
+
+```ini
+[Unit]
+Description=q-serve - Temporary file sharing server
+After=network.target
+
+[Service]
+Type=simple
+User=<your-user>
+WorkingDirectory=/home/<your-user>
+ExecStart=/usr/local/bin/q-serve server --port 3333
+Restart=on-failure
+RestartSec=5
+Environment="Q_SERVE_PORT=3333"
+Environment="Q_SERVE_STORAGE=/var/q-serve/storage"
+
+[Install]
+WantedBy=multi-user.target
+```
+
+### Create Storage Directory
+
+```bash
+sudo mkdir -p /var/q-serve/storage
+sudo chown -R $USER:$USER /var/q-serve
+```
+
+### Enable and Start the Service
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable q-serve
+sudo systemctl start q-serve
+```
+
+### Check Status
+
+```bash
+sudo systemctl status q-serve
+```
+
+### View Logs
+
+```bash
+sudo journalctl -u q-serve -f
+```
+
+### Commands
+
+| Action | Command |
+|--------|---------|
+| Start | `sudo systemctl start q-serve` |
+| Stop | `sudo systemctl stop q-serve` |
+| Restart | `sudo systemctl restart q-serve` |
+| Enable on boot | `sudo systemctl enable q-serve` |
+| Disable on boot | `sudo systemctl disable q-serve` |
 
 ## API Endpoints
 
@@ -175,7 +239,7 @@ q-serve ./image.png
 You'll see output like:
 
 ```
-🔗 http://localhost:3000/s/abc123xy
+🔗 http://localhost:3333/s/abc123xy
 ⏰ Expires in 30s
 ```
 
@@ -215,16 +279,16 @@ You can also use the API directly:
 
 ```bash
 # Upload file
-curl -F "file=@myfile.png" -F "timeout=60" http://localhost:3000/api/sessions
+curl -F "file=@myfile.png" -F "timeout=60" http://localhost:3333/api/sessions
 
 # List active sessions
-curl http://localhost:3000/api/sessions
+curl http://localhost:3333/api/sessions
 
 # Check server health
-curl http://localhost:3000/api/health
+curl http://localhost:3333/api/health
 
 # Delete a session
-curl -X DELETE http://localhost:3000/api/sessions/<session-id>
+curl -X DELETE http://localhost:3333/api/sessions/<session-id>
 ```
 
 ## File Type Detection
