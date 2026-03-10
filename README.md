@@ -14,7 +14,6 @@ CLI tool for serving static files temporarily with auto-expiration and deletion.
 ## Installation
 
 ```bash
-cd workspace/2026-03-10-q-serve
 bun install
 ```
 
@@ -58,13 +57,13 @@ q-serve <path> [options]
 
 ### Options
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--port <number>` | Port to listen | 3000 |
-| `--timeout <sec>` | Session timeout in seconds | 30 |
-| `--open` | Open browser after serving | false |
-| `--server` | Start server if not running | false |
-| `--config <path>` | Config file path | - |
+| Flag              | Description                 | Default |
+| ----------------- | --------------------------- | ------- |
+| `--port <number>` | Port to listen              | 3000    |
+| `--timeout <sec>` | Session timeout in seconds  | 30      |
+| `--open`          | Open browser after serving  | false   |
+| `--server`        | Start server if not running | false   |
+| `--config <path>` | Config file path            | -       |
 
 ## Configuration
 
@@ -81,6 +80,7 @@ Create `q-serve.json` in your project directory or home directory:
 ```
 
 Config file locations (in order of priority):
+
 1. `./q-serve.json` (project directory)
 2. `~/.q-serve.json` (home directory)
 
@@ -184,6 +184,7 @@ bun run src/index.ts ./file.txt
 ```
 
 You'll be asked for:
+
 - Session timeout (seconds)
 
 ### Programmatic Usage
@@ -206,12 +207,12 @@ curl -X DELETE http://localhost:3000/api/sessions/<session-id>
 
 ## File Type Detection
 
-| Extension | Type |
-|-----------|------|
-| `.html`, `.htm` | web |
+| Extension                                        | Type  |
+| ------------------------------------------------ | ----- |
+| `.html`, `.htm`                                  | web   |
 | `.jpg`, `.jpeg`, `.png`, `.gif`, `.svg`, `.webp` | image |
-| `.txt`, `.json`, `.md`, `.css`, `.js` | text |
-| Others | other |
+| `.txt`, `.json`, `.md`, `.css`, `.js`            | text  |
+| Others                                           | other |
 
 ## Architecture
 
