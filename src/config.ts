@@ -1,7 +1,7 @@
-import { readFile } from 'fs/promises';
-import { existsSync } from 'fs';
-import { resolve, dirname } from 'path';
-import { homedir } from 'os';
+import { readFile, mkdir, writeFile } from "fs/promises";
+import { existsSync } from "fs";
+import { resolve } from "path";
+import { homedir } from "os";
 
 export interface Config {
   port: number;
@@ -9,26 +9,39 @@ export interface Config {
   defaultTimeout: number;
 }
 
+const GLOBAL_CONFIG_DIR = resolve(homedir(), ".q-serve");
+const GLOBAL_CONFIG_PATH = resolve(GLOBAL_CONFIG_DIR, "q-serve.json");
+const GLOBAL_STORAGE_PATH = resolve(GLOBAL_CONFIG_DIR, "storage");
+
 const DEFAULT_CONFIG: Config = {
   port: 3000,
-  storage: './q-storage',
+  storage: GLOBAL_STORAGE_PATH,
   defaultTimeout: 30,
 };
 
+async function ensureGlobalConfig(): Promise<void> {
+  if (!existsSync(GLOBAL_CONFIG_DIR)) {
+    await mkdir(GLOBAL_CONFIG_DIR, { recursive: true });
+  }
+  if (!existsSync(GLOBAL_CONFIG_PATH)) {
+    const defaultContent = JSON.stringify(DEFAULT_CONFIG, null, 2);
+    await writeFile(GLOBAL_CONFIG_PATH, defaultContent, "utf-8");
+  }
+}
+
 export async function loadConfig(configPath?: string): Promise<Config> {
+  await ensureGlobalConfig();
+
   let config = { ...DEFAULT_CONFIG };
 
   const locations = configPath
     ? [resolve(configPath)]
-    : [
-        resolve('./q-serve.json'),
-        resolve(dirname(homedir()), 'q-serve.json'),
-      ];
+    : [resolve("./q-serve.json"), GLOBAL_CONFIG_PATH];
 
   for (const location of locations) {
     if (existsSync(location)) {
       try {
-        const content = await readFile(location, 'utf-8');
+        const content = await readFile(location, "utf-8");
         const parsed = JSON.parse(content);
         config = { ...config, ...parsed };
       } catch {
@@ -52,12 +65,14 @@ export async function loadConfig(configPath?: string): Promise<Config> {
 
 export function mergeCliFlags(
   config: Config,
-  flags: { port?: number; storage?: string; defaultTimeout?: number }
+  flags: { port?: number; storage?: string; defaultTimeout?: number },
 ): Config {
   return {
     ...config,
     ...(flags.port !== undefined && { port: flags.port }),
     ...(flags.storage !== undefined && { storage: flags.storage }),
-    ...(flags.defaultTimeout !== undefined && { defaultTimeout: flags.defaultTimeout }),
+    ...(flags.defaultTimeout !== undefined && {
+      defaultTimeout: flags.defaultTimeout,
+    }),
   };
 }

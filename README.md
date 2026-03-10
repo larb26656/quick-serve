@@ -25,10 +25,10 @@ bun install
 
 ```bash
 # From local directory
-bun install -g .
+npm install -g .
 
 # Or from GitHub
-bun install -g https://github.com/larb26656/quick-serve
+npm install -g https://github.com/larb26656/quick-serve
 ```
 
 Then use `q-serve` from anywhere:

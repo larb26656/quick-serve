@@ -11,7 +11,8 @@
     "dev": "bun run src/index.ts",
     "serve": "bun run src/index.ts server",
     "test": "bun test",
-    "build": "bun build ./src/index.ts --outdir ./dist --target node"
+    "build": "bun build ./src/index.ts --outdir ./dist --target node",
+    "package": "bun run build & npm install -g ."
   },
   "dependencies": {
     "commander": "^12.0.0",
