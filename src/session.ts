@@ -1,13 +1,13 @@
-import { mkdir, rm, writeFile, readFile } from 'fs/promises';
-import { existsSync } from 'fs';
-import { basename, extname } from 'path';
+import { mkdir, rm, writeFile, readFile } from "fs/promises";
+import { existsSync } from "fs";
+import { basename, extname } from "path";
 
 export interface Session {
   id: string;
   key: string;
   path: string;
   filename: string;
-  type: 'web' | 'image' | 'text' | 'other';
+  type: "web" | "image" | "text" | "other";
   createdAt: string;
   expiresAt: string;
   url: string;
@@ -21,32 +21,37 @@ const sessions = new Map<string, SessionWithTimer>();
 const keyToId = new Map<string, string>();
 
 function generateId(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
+  return crypto.randomUUID();
 }
 
 function generateKey(): string {
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-  let key = '';
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let key = "";
   for (let i = 0; i < 8; i++) {
     key += chars[Math.floor(Math.random() * chars.length)];
   }
   return key;
 }
 
-function getFileType(filename: string): 'web' | 'image' | 'text' | 'other' {
+function getFileType(filename: string): "web" | "image" | "text" | "other" {
   const ext = extname(filename).toLowerCase();
-  const webExts = ['.html', '.htm'];
-  const imageExts = ['.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp'];
-  const textExts = ['.txt', '.json', '.md', '.css', '.js', '.ts', '.jsx', '.tsx'];
+  const webExts = [".html", ".htm"];
+  const imageExts = [".jpg", ".jpeg", ".png", ".gif", ".svg", ".webp"];
+  const textExts = [
+    ".txt",
+    ".json",
+    ".md",
+    ".css",
+    ".js",
+    ".ts",
+    ".jsx",
+    ".tsx",
+  ];
 
-  if (webExts.includes(ext)) return 'web';
-  if (imageExts.includes(ext)) return 'image';
-  if (textExts.includes(ext)) return 'text';
-  return 'other';
+  if (webExts.includes(ext)) return "web";
+  if (imageExts.includes(ext)) return "image";
+  if (textExts.includes(ext)) return "text";
+  return "other";
 }
 
 export async function createSession(
@@ -54,7 +59,7 @@ export async function createSession(
   timeout: number,
   storage: string,
   baseUrl: string,
-  originalFilename?: string
+  originalFilename?: string,
 ): Promise<Session> {
   const id = generateId();
   let key = generateKey();
@@ -112,7 +117,7 @@ export async function deleteSession(id: string): Promise<void> {
   }
 }
 
-let storage = './q-storage';
+let storage = "./q-storage";
 
 export function setStoragePath(path: string): void {
   storage = path;

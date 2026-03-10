@@ -11,3 +11,6 @@ dist/
 tmp/
 temp/
 test-upload-dir/
+
+# temp
+q-storage/

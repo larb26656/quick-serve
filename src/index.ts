@@ -2,7 +2,7 @@
 import { readFile } from "fs/promises";
 import { existsSync } from "fs";
 import { resolve, basename } from "path";
-import { spawn } from "child_process";
+import { openBrowser } from "./browser";
 import { Command } from "commander";
 import { loadConfig, mergeCliFlags, type Config } from "./config.js";
 import { createServer } from "./server.js";
@@ -42,19 +42,18 @@ async function uploadFile(
     body: formData,
   });
 
-  let errorMessage: string;
+  let data: any;
+
   try {
-    const error = await response.json();
-    errorMessage = error.error || "Failed to upload file";
+    data = await response.json();
   } catch {
-    errorMessage = `Server error: ${response.status} ${response.statusText}`;
+    throw new Error(`Server error: ${response.status} ${response.statusText}`);
   }
 
   if (!response.ok) {
-    throw new Error(errorMessage);
+    throw new Error(data?.error || "Failed to upload file");
   }
 
-  const data = await response.json();
   const session = data.session;
 
   console.log(`\n🔗 ${session.url}`);
@@ -62,15 +61,12 @@ async function uploadFile(
 
   if (open) {
     console.log(`🌐 Opening browser...`);
-    spawn("xdg-open", [session.url], {
-      detached: true,
-      stdio: "ignore",
-    }).unref();
+    openBrowser(session.url);
   }
 }
 
 async function startServer(config: Config): Promise<void> {
-  const server = await createServer(config);
+  await createServer(config);
   console.log(`Press Ctrl+C to stop`);
 
   process.stdin.resume();
