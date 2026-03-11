@@ -176,3 +176,11 @@ export function getAllSessions(baseUrl: string): Session[] {
 export function getActiveSessionCount(): number {
   return sessions.size;
 }
+
+export function clearAllSessions(): void {
+  for (const [, session] of sessions) {
+    clearTimeout(session.timer);
+  }
+  sessions.clear();
+  keyToId.clear();
+}
