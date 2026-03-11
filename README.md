@@ -2,6 +2,10 @@
 
 CLI tool for serving static files temporarily with auto-expiration and deletion. Built with Bun.
 
+## Use Cases
+
+- **AI Agent Result Sharing**: Allow AI agent to show result to you by serving generated files (images, screenshots, documents) temporarily. The AI can generate files and share them via q-serve for you to preview before saving permanently.
+
 ## Features
 
 - Temporary file sharing with automatic expiration
