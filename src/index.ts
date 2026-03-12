@@ -9,6 +9,8 @@ import { createServer } from "./server.js";
 
 interface CliOptions {
   port?: number;
+  bind?: string;
+  hostname?: string;
   config?: string;
   timeout?: number;
   open?: boolean;
@@ -116,15 +118,23 @@ async function main() {
     .command("server")
     .description("Start the server")
     .option("-p, --port <number>", "Port to listen", "3333")
+    .option("-b, --bind <ip>", "Bind IP (0.0.0.0 or 127.0.0.1)", "0.0.0.0")
+    .option("-n, --hostname <url>", "Public URL (e.g., https://www.example.com)")
     .option("-c, --config <path>", "Config file path")
     .action(async (options) => {
       const configOptions = {
         port: options.port ? parseInt(options.port, 10) : undefined,
+        bind: options.bind,
+        hostname: options.hostname,
         config: options.config,
       };
 
       let config = await loadConfig(configOptions.config);
-      config = mergeCliFlags(config, { port: configOptions.port });
+      config = mergeCliFlags(config, { 
+        port: configOptions.port, 
+        bind: configOptions.bind,
+        hostname: configOptions.hostname 
+      });
       await startServer(config);
     });
 
@@ -134,10 +144,14 @@ async function main() {
     .option("-o, --open", "Open browser after serving")
     .option("-s, --server", "Start server if not running")
     .option("-p, --port <number>", "Server port", "3333")
+    .option("-b, --bind <ip>", "Bind IP (0.0.0.0 or 127.0.0.1)", "0.0.0.0")
+    .option("-n, --hostname <url>", "Public URL (e.g., https://www.example.com)")
     .option("-c, --config <path>", "Config file path")
     .action(async (path: string, options) => {
       const configOptions = {
         port: options.port ? parseInt(options.port, 10) : undefined,
+        bind: options.bind,
+        hostname: options.hostname,
         timeout: options.timeout ? parseInt(options.timeout, 10) : undefined,
         config: options.config,
       };
@@ -145,6 +159,8 @@ async function main() {
       let config = await loadConfig(configOptions.config);
       config = mergeCliFlags(config, {
         port: configOptions.port,
+        bind: configOptions.bind,
+        hostname: configOptions.hostname,
         defaultTimeout: configOptions.timeout,
       });
 

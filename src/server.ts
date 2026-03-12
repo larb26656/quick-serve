@@ -9,7 +9,7 @@ import {
   getActiveSessionCount,
   setStoragePath,
 } from "./session.js";
-import type { Config } from "./config.js";
+import { getBaseUrl, type Config } from "./config.js";
 import { resolve } from "path";
 
 export async function createServer(config: Config) {
@@ -19,7 +19,7 @@ export async function createServer(config: Config) {
     await mkdir(config.storage, { recursive: true });
   }
 
-  const baseUrl = `http://0.0.0.0:${config.port}`;
+  const baseUrl = getBaseUrl(config);
 
   const app = new Elysia()
     .get("/api/health", () => ({
@@ -35,7 +35,6 @@ export async function createServer(config: Config) {
     .post(
       "/api/sessions",
       async ({ body: { file }, status }) => {
-        // const timeoutStr =
         const timeout = config.defaultTimeout;
 
         if (!file) {
@@ -98,10 +97,20 @@ export async function createServer(config: Config) {
         };
     });
 
-  const server = app.listen(config.port, () => {
-    console.log(`Server running on http://0.0.0.0:${config.port}`);
-    console.log(`Storage: ${config.storage}`);
-  });
+  const server = app.listen(
+    {
+      port: config.port,
+      hostname: config.bind,
+    },
+    () => {
+      const bindUrl = `${config.bind}:${config.port}`;
+      console.log(`🚀 Server running on http://${bindUrl}`);
+      if (baseUrl !== bindUrl) {
+        console.log(`🌐 Public URL: ${baseUrl}`);
+      }
+      console.log(`📦 Storage: ${config.storage}`);
+    }
+  );
 
   return server;
 }
